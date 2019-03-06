@@ -14,7 +14,9 @@ class BuildingController extends Controller
      */
     public function index()
     {
-        //
+        $buildings = Building::all();
+
+        return view('buildings.index', compact('buildings'));
     }
 
     /**
@@ -24,7 +26,7 @@ class BuildingController extends Controller
      */
     public function create()
     {
-        //
+        return view('buildings.create', ['uid' => auth()->user()->id]);
     }
 
     /**
@@ -35,7 +37,9 @@ class BuildingController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $building = Building::create($request->all());
+
+        return view('buildings.show', compact('building'));
     }
 
     /**
@@ -46,7 +50,7 @@ class BuildingController extends Controller
      */
     public function show(Building $building)
     {
-        //
+        return view('buildings.show', ['building' => $building]);
     }
 
     /**
@@ -57,7 +61,7 @@ class BuildingController extends Controller
      */
     public function edit(Building $building)
     {
-        //
+        return view('buildings.create', ['uid' => auth()->user()->id, compact($building)]);
     }
 
     /**
@@ -69,7 +73,9 @@ class BuildingController extends Controller
      */
     public function update(Request $request, Building $building)
     {
-        //
+        $building->update($request->all());
+
+        return view('buildings.show', compact('building'));
     }
 
     /**
@@ -77,9 +83,14 @@ class BuildingController extends Controller
      *
      * @param  \App\Building  $building
      * @return \Illuminate\Http\Response
+     * @throws \Exception
      */
     public function destroy(Building $building)
     {
-        //
+        $building->delete();
+
+        $buildings = Building::all();
+
+        return view('buildings.index', compact('buildings'));
     }
 }
