@@ -6,7 +6,7 @@ Laravel 13 API, Vue 3 frontend and MySQL 8.4. Greek is the default; English is s
 
 The initial implementation is available at **http://127.0.0.1:5173** when both development servers are running. Its local administrator credentials are in `.local/admin-credentials.json` (private, ignored by version control). No resident accounts are provisioned automatically.
 
-The imported archive covers April 2019–August 2026: 80 published months and 720 current apartment rows, from 76 source photos. November 2024–July 2025 is missing and remains a gap. Four combined statements produce eight explicitly labelled estimated months. Original photos are in private storage; corrections preserve earlier revisions and printed rounding differences have explicit explanations. See `docs/IMPORT_POLICY.md` for the October 2026 historical import and its reproducible private bundle.
+The imported archive covers April 2019–August 2026: 89 published months and 801 current apartment rows. Four combined statements produce eight explicitly labelled estimated months. Original photos are in private storage; corrections preserve earlier revisions and printed rounding differences have explicit explanations. See `docs/IMPORT_POLICY.md` for the October 2026 historical import and its reproducible private bundle.
 
 ### Requirements and setup
 
@@ -100,13 +100,31 @@ For actual recovery: stop application writes, restore the SQL dump into a fresh 
 
 ## Deployment status
 
-The administrator application is deployed on Playground at **http://167.233.105.254/building_manager/** as of 2026-10-02, using the server's existing Caddy routing. The deployment includes all 80 published months, 720 current apartment rows and the private source documents. Use the existing administrator credentials from `.local/admin-credentials.json`. No resident accounts were enabled.
+The administrator application is deployed on Playground at **http://167.233.105.254/building_manager/**, most recently updated on 2026-10-04, using the server's existing Caddy routing. The deployment includes all 89 published months, 801 current apartment rows and the private source documents. Use the existing administrator credentials from `.local/admin-credentials.json`. No resident accounts were enabled.
 
 The server files are in `/opt/building_manager`. `deploy/compose.playground.yaml` runs separate PHP-FPM, Nginx and MySQL containers, with persistent database and private storage and no additional public ports. The frontend is built with `--base=/building_manager/`; API calls, source URLs, CSV downloads and session cookies respect that path. Production debug mode is disabled and database passwords are specific to this deployment. Server secrets are in `.env.playground` and `shared/application.env`; private documents and sessions are in `shared/storage`.
 
 Manage this deployment from `/opt/building_manager` with `docker compose --env-file .env.playground -f deploy/compose.playground.yaml ps` (or `up -d`). The route is in `/opt/filosafe/deploy/Caddyfile`, with its previous configuration backed up beside it. Validate/reload Caddy using the directory-mounted `/var/www/html/deploy/Caddyfile` path inside `filosafe-playground-caddy-1`; its individual `/etc/caddy/Caddyfile` bind mount was stale during deployment. `deploy/activate-playground.py` uses the current directory mount and verifies both applications after reload.
 
-Deployment validation: 20 backend tests / 92 assertions and four frontend tests passed; the subpath frontend build passed. HTTP checks verified sign-in/out, CSRF enforcement, report coverage, C1's 80-month history, a private document checksum, CSV export and access restrictions. All 88 private files were verified after transfer. The existing `/filosafe/` application remained available. Chrome end-to-end tests were not run for this deployment, per the manager's instruction; browser review is manual. The private verification receipt is `.local/playground-deployment-_cuavblo/http-verification.json`.
+Deployment validation on 2026-10-04: authenticated HTTP checks verified sign-in/out, CSRF enforcement, 89-month report coverage and apartment history, full/summary/series report formats, recurring statistics, pagination, CSV export, a private document checksum, access restrictions and gzip. Chrome checks passed for the recurring chart, category selection, statement pagination, English and mobile layout. Database record counts and expense totals, all private file hashes and environment files matched the pre-deployment backup. PHP-FPM configuration, Composer platform requirements and migrations passed. The existing `/filosafe/` application remained healthy. Local verification receipts are in `.local/server-update/`; the server preservation receipt is `/opt/building_manager/.local/data-preservation-verification.json`.
+
+### Deploying updates
+
+The server checkout at `/opt/building_manager` tracks `main` from `https://github.com/koykis/building_manager.git`. It pulls the public repository over HTTPS without a GitHub credential on the server. SSH access to Playground is available from this workstation.
+
+After committing and pushing changes to `main`, run from this workstation:
+
+```bash
+ssh root@167.233.105.254 'cd /opt/building_manager && ./deploy/update-playground.sh'
+```
+
+[`deploy/update-playground.sh`](deploy/update-playground.sh) requires a clean tracked working tree and a fast-forward update. It backs up the database, shared private storage/configuration and application files to `/opt/building_manager/backups/deploy-<UTC timestamp>/`, records checksums and the previous commit, and retains the previous backend image as `building-manager-playground-app:before-<UTC timestamp>`.
+
+The script then pulls changes, builds the production backend and the frontend under `/building_manager/`, and validates Nginx before briefly entering maintenance mode. It recreates the backend, applies migrations, refreshes Laravel caches, installs the frontend while retaining old hashed assets, and recreates Nginx so its configuration bind mount loads the latest file. It exits maintenance mode and checks `/building_manager/`, `/building_manager/up` and `/filosafe/`. Successful backups contain `deployed-commit.txt` recording the deployed revision.
+
+Server prerequisites are Git, Docker Compose, rsync and curl; Node runs in a temporary Docker container. MySQL has a 768 MB memory limit because the previous 512 MB limit was exhausted during a database backup. Existing secrets remain in `.env.playground` and `shared/application.env`; the database volume and shared storage persist across builds.
+
+On failure after maintenance starts, the script attempts to bring the application back online and reports the backup location; it does not automatically roll back code or migrations. Inspect the command output and backup before choosing recovery steps. `deploy/bootstrap-playground.sh` is for the initial empty-database installation, not routine updates.
 
 Playground uses HTTP under the requested IP-based app path. Domain/TLS and a durable external backup destination remain future production setup work. `deploy/nginx.conf.example` remains a separate domain/TLS template.
 
