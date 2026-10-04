@@ -1,0 +1,19 @@
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: building_manager
+      MYSQL_USER: building
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .local/compose.env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in .local/compose.env}
+    ports:
+      - "127.0.0.1:33079:3306"
+    volumes:
+      - building_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+volumes:
+  building_mysql:

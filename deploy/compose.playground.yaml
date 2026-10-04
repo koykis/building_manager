@@ -1,0 +1,50 @@
+name: building-manager-playground
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    mem_limit: 512m
+    command: ["--innodb-buffer-pool-size=128M", "--max-connections=30"]
+    environment:
+      MYSQL_DATABASE: building_manager
+      MYSQL_USER: oikia
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD}
+    volumes:
+      - database:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    mem_limit: 512m
+    env_file: ../shared/application.env
+    volumes:
+      - ../shared/storage:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+  web:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    mem_limit: 128m
+    volumes:
+      - ../frontend/dist:/srv/frontend:ro
+      - ./nginx.playground.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      default:
+      playground:
+        aliases: [building-manager-web]
+    depends_on: [app]
+volumes:
+  database:
+networks:
+  playground:
+    external: true
+    name: filosafe-playground_filosafe
+

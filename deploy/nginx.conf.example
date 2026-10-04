@@ -1,0 +1,30 @@
+# Replace domain, paths, PHP socket and TLS certificate paths before deployment.
+server {
+    listen 80;
+    server_name building.example.org;
+    return 301 https://$host$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name building.example.org;
+    ssl_certificate /etc/letsencrypt/live/building.example.org/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/building.example.org/privkey.pem;
+    root /srv/building_manager/frontend/dist;
+    index index.html;
+    client_max_body_size 22m;
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_comp_level 4;
+    gzip_types application/json application/javascript text/css text/csv;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy same-origin always;
+    location / { try_files $uri $uri/ /index.html; }
+    location ~ ^/(api|sanctum|up)(/|$) {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME /srv/building_manager/backend/public/index.php;
+        fastcgi_param SCRIPT_NAME /index.php;
+        fastcgi_pass unix:/run/php/php8.4-fpm.sock;
+    }
+    location ~ /\. { deny all; }
+}

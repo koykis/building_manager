@@ -1,0 +1,6 @@
+# Insert inside the existing route block, before its final respond 404.
+redir /building_manager /building_manager/ 308
+handle_path /building_manager/* {
+    header X-Frame-Options SAMEORIGIN
+    reverse_proxy building-manager-web:80
+}
