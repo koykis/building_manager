@@ -6,6 +6,7 @@
 /frontend/node_modules/
 /frontend/dist/
 /frontend/dist-playground/
+/frontend/dist-next/
 /.local/
 /backups/
 *.sqlite
