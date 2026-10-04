@@ -25,7 +25,7 @@ printf '%s\n' "building-manager-playground-app:before-$stamp" > "$backup/previou
 sha256sum "$backup/database.sql" "$backup/private-storage.tar.gz" "$backup/application.tar.gz" > "$backup/SHA256SUMS"
 printf 'Backup saved: %s\n' "$backup"
 
-git merge --ff-only origin/main
+(umask 022; git merge --ff-only origin/main)
 compose build app
 docker run --rm --memory=384m --cpus=1 -v "$root/frontend:/app" -w /app node:20-bookworm-slim sh -c 'npm ci --no-audit --no-fund && npm run build -- --base=/building_manager/ --outDir dist-next'
 
