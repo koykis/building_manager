@@ -28,6 +28,7 @@ printf 'Backup saved: %s\n' "$backup"
 (umask 022; git merge --ff-only origin/main)
 compose build app
 docker run --rm --memory=384m --cpus=1 -v "$root/frontend:/app" -w /app node:20-bookworm-slim sh -c 'npm ci --no-audit --no-fund && npm run build -- --base=/building_manager/ --outDir dist-next'
+compose run --rm --no-deps web nginx -t
 
 maintenance=0
 finish() {
@@ -54,8 +55,8 @@ compose exec -T --user www-data app php artisan optimize --no-interaction
 rsync -a --delay-updates frontend/dist-next/ frontend/dist/
 # Nginx must be able to read files created under the private shell umask.
 chmod -R a+rX frontend/dist
-compose exec -T web nginx -t
-compose exec -T web nginx -s reload
+# Recreate the file bind mount after Git replaces the configuration inode.
+compose up -d --no-deps --force-recreate web
 compose exec -T --user www-data app php artisan up --no-interaction
 maintenance=0
 
